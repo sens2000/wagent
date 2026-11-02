@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 	<select id="findSheetList" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap">
+		<mapper namespace="sy2015Mapper">
+ -->
+<!-- 맵핑될 DAO 인터페이스의 Full name 을 줍니다. -->
+<mapper namespace="m_ips01">
+
+<select id="loginCheck" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+	SELECT USERID
+		,USERPASS
+		,SHOPNO
+		,GRADE
+		,USERNAME
+		,CHK
+		,GKEY
+		,GUBUN
+	FROM USER_SHOP A 
+		WHERE 1=1 
+		AND USERID != ''
+		AND A.USERID = #{SID} 
+		AND A.USERPASS = #{SPASS}
+</select>
+
+
+
+<insert id="m_LogSave" parameterType="java.util.HashMap"> 
+	INSERT INTO USER_SHOP_LOG 
+		(USERID
+		,USERPASS
+		,REGDATE
+		,STATUS)
+	SELECT #{SID}
+		,#{SPASS}
+		,DATEFORMAT(GETDATE(),'YYYYMMDDHHNNSS')
+		,#{STATUS}
+	FROM DUMMY 	
+</insert>
+
+<insert id="m_dataSmsSave" parameterType="java.util.HashMap"> 
+	INSERT INTO SEND_MST  
+		( KIND,   
+		  KINDSHOP,   
+		  SENDKEY,   
+		  SYYMM,   
+		  SDATE,   
+		  STIME,   
+		  REMK,   
+		  TOTCNT,   
+		  SUCCESS,   
+		  FAIL,
+		  SENDKINDSHOP,
+		  INTOT,
+		  INCNT,
+		  INSERVICE,
+		  FINISH)  
+	SELECT 	'01'   
+			,'01' + #{CUSTCD}
+			,#{JPNO}
+			,LEFT(#{KJSKDATE},6)
+			,#{KJSKDATE}
+			,DATEFORMAT(GETDATE(),'HHNN')
+			,'WEB'
+			,0
+			,0
+			,0
+			,#{PRUSER}
+			,#{CASHAMT}
+			,#{CASHAMT}
+			,0
+			,0
+			FROM DUMMY 
+</insert>
+
+<update id="m_dataSmsUpdate" parameterType="java.util.HashMap"> 
+	UPDATE SHOP_TB SET CNT = CNT + #{CASHAMT} WHERE KINDSHOP = '01' + #{CUSTCD}
+</update>
+
+<update id="m_dataKJUpdate" parameterType="java.util.HashMap"> 
+	UPDATE SHOP_LIST SET KJMARK='Y',KJDATE=#{KJDATE} WHERE SHOPNO = #{CUSTCD}
+</update>
+
+
+<select id="m_SHOPselectSmsList" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+	SELECT  L.KJDATE KJDATE,
+		L.SHOPNO SHOPNO,
+		L.SHOPNAME SHOPNAME, 
+		L.IPNO IPNO,
+		T.CNT CNT
+	FROM SHOP_LIST L ,SHOP_TB T
+	WHERE T.KINDSHOP = '01' + L.SHOPNO
+		AND (L.SHOPNAME LIKE #{FIND} + '%' OR L.GROUPNO LIKE #{FIND} + '%' ) 
+</select>
+
+<select id="m_ShopList" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+	SELECT  
+		L.SHOPNO SHOPNO,
+		L.SHOPNAME SHOPNAME, 
+		L.IPNO IPNO
+	FROM SHOP_LIST L
+	WHERE GROUPNO = #{GROUPNO}
+</select>
+
+	
+</mapper>

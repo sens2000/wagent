@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 맵핑될 DAO 인터페이스의 Full name 을 줍니다. -->
+
+<!-- SELECT CAST( DECRYPT( ENCRYPT('010-1234-5678', '1234'), '1234') AS VARCHAR(50) );   -->
+
+<mapper namespace="pos01">
+
+<select id="selectPosno" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+	SELECT POSNO,SHOPNO,POSNM,FRDATE,TODATE,PASSWD ,(SELECT PASSWD FROM SYS_MST) SYSPASS
+	FROM POS_MST WHERE POSNO = #{posno}
+
+</select>
+
+<select id="selectUserinfo" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+	SELECT code,name,grade,pass,saler
+	FROM USER_INFO WHERE SHOPNO = #{shopno}
+
+</select>
+
+<select id="selectUsermst" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+	select shopno,shopname,owner,sano,addr,telno,
+		goldamt,goldper,silveramt,silverper,greenamt,greenper,memper,realper,cardper,
+		cardshopno,cardserverip,cardserverport,
+		(select count(*) from member m where m.shopno = user_mst.shopno) memcnt
+	from user_mst
+	 WHERE SHOPNO = #{shopno}
+
+</select>
+
+
+<select id="selectJepmmst" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+	  SELECT jepmcd,   
+	         jepmnm,   
+	         makecd,   
+	         makecust,   
+	         brand,   
+	         jpmkind,   
+	         price,   
+	         setchk,   
+	         chk,   
+	         oldbar,   
+	         remk,   
+	         prdate,   
+	         moddate,   
+	         jego,   
+	         saeun,   
+	         main,   
+	         book,   
+	         barprt,   
+	         jpmbonus,   
+	         inprice,   
+	         saleprice,   
+	         sys,   
+	         lastdate,   
+	         shopno,   
+	         jikpanprice  
+	    FROM jepm_mst 
+	where jepmcd in (select jepmcd from jepm_down where downdate = #{downkey} and shopno = #{shopno}) 
+</select>
+
+<select id="selectJepmjepmcd" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+	  SELECT jepmcd,   
+	         jepmnm,   
+	         makecust,   
+	         brand,   
+	         jpmkind,   
+	         price,   
+	         setchk,   
+	         chk,   
+	         oldbar,   
+	         remk,   
+	         prdate,   
+	         moddate,   
+	         shopno   
+	    FROM jepm_all 
+	where jepmcd = #{jepmcd} 
+</select>
+
+<select id="selectJepmfind" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+	  SELECT jepmcd,   
+	         jepmnm,   
+	         makecust,   
+	         brand,   
+	         jpmkind,   
+	         price,   
+	         setchk,   
+	         chk,   
+	         oldbar,   
+	         remk,   
+	         prdate,   
+	         moddate,   
+	         shopno   
+	    FROM jepm_all 
+	where chk = 'Y'
+		<if test="brand != null and brand != ''	"> 
+	    	AND BRAND like #{brand}
+		</if>	
+		<if test="jepmnm != null and jepmnm != '' "> 
+	    	AND jepmnm like #{jepmnm}
+		</if>	
+
+		<if test="price != null"> 
+	    	AND price = #{price}
+		</if>	
+	order by brand,jepmnm
+</select>
+
+<select id="selectMemberfind" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+  SELECT memno,   
+         name,   
+         birthday,   
+         member,   
+         addr,   
+         handno,   
+         hand4,   
+         saleamt,   
+         misuamt,   
+         bonusamt,   
+         visitcnt,   
+         prdate,   
+         remk,   
+         daygubun,   
+         shopno,   
+         memno6,   
+         lastdate,   
+         manager  
+    FROM member   
+	where chk = 'Y' and sys = 'N' 
+		<if test="name != null and name != ''	"> 
+	    	AND name like #{name}
+		</if>	
+		<if test="handno != null and handno != '' "> 
+	    	AND handno = #{handno}
+		</if>	
+
+		<if test="hand4 != null and hand4 != '' "> 
+	    	AND hand4 = #{hand4}
+		</if>	
+	order by name </select>
+
+
+<update id="downUpdate" parameterType="java.util.HashMap"> 
+	update jepm_down set downdate = #{downkey},down='Y' where down = 'N' and shopno = #{shopno}
+
+</update>	
+
+<!-- 테이블컴럼명 밸류는 제이슨 형태로처리. -->
+<!-- Map<String, Object> row = mapper.readValue(jsonString, new TypeReference<Map<String,Object>>(){}); -->
+<!-- employeeMapper.insertFromJson(row); -->
+
+<insert id="InsertMc20mstJson" parameterType="map">
+    INSERT INTO mc20_mst
+    <foreach collection="_parameter" index="key" item="value" open="(" separator="," close=")">
+        ${key}
+    </foreach>
+    SELECT
+    <foreach collection="_parameter" index="key" item="value" open="" separator="," close="">
+        #{value}
+    </foreach>
+    WHERE NOT EXISTS (
+        SELECT 1 FROM mc20_mst WHERE cjpno = #{cjpno} and shopno = #{shopno}
+    )
+</insert>
+
+<insert id="InsertMc20dtlJson" parameterType="map">
+    INSERT INTO mc20_dtl
+    <foreach collection="_parameter" index="key" item="value" open="(" separator="," close=")">
+        ${key}
+    </foreach>
+    SELECT
+    <foreach collection="_parameter" index="key" item="value" open="" separator="," close="">
+        #{value}
+    </foreach>
+    WHERE NOT EXISTS (
+        SELECT 1 FROM mc20_dtl WHERE cjpno = #{cjpno} and seq = #{seq} and shopno = #{shopno} 
+    )
+</insert>
+
+<insert id="InsertJepmmstJson" parameterType="map">
+    INSERT INTO jepm_mst
+    <foreach collection="_parameter" index="key" item="value" open="(" separator="," close=")">
+        ${key}
+    </foreach>
+    SELECT
+    <foreach collection="_parameter" index="key" item="value" open="" separator="," close="">
+        #{value}
+    </foreach>
+    WHERE NOT EXISTS (
+        SELECT 1 FROM jepm_mst WHERE jepmcd = #{jepmcd} and shopno = #{shopno} 
+    )
+</insert>
+
+<insert id="InsertMemberJson" parameterType="map">
+  <selectKey keyProperty="memno" resultType="String" order="BEFORE">
+  	SELECT f_next_memno(#{shopno}) FROM dummy
+  </selectKey>
+    INSERT INTO member
+    <foreach collection="_parameter" index="key" item="value" open="(" separator="," close=")">
+        ${key}
+    </foreach>
+    SELECT
+    <foreach collection="_parameter" index="key" item="value" separator=",">
+        <choose>
+            <when test="key == 'memno'">
+                #{shopno} || #{memno}
+            </when>
+            <when test="key == 'memno6'">
+                #{memno}
+            </when>
+            <otherwise>
+                #{value}
+            </otherwise>
+        </choose>
+    </foreach>
+</insert>
+
+<insert id="UpdateMemberJson" parameterType="map">
+    UPDATE member
+    <set>
+        <foreach collection="_parameter" index="key" item="value" separator=",">
+            <if test="key != 'memno'">
+                ${key} = #{value}
+            </if>
+        </foreach>
+    </set>
+    WHERE memno = #{memno}
+</insert>
+
+<insert id="insertMc20mstJson" parameterType="map">
+    INSERT INTO mc20_mst
+    <foreach collection="_parameter" index="key" item="value" open="(" separator="," close=")">
+        ${key}
+    </foreach>
+    VALUES
+    <foreach collection="_parameter" index="key" item="value" open="(" separator="," close=")">
+        #{value}
+    </foreach>
+</insert>
+
+<update id="insertJepmall" parameterType="java.util.HashMap"> 
+	insert into jepm_all (
+	  			jepmcd,   
+	         jepmnm,   
+	         makecust,   
+	         brand,   
+	         jpmkind,   
+	         price,   
+	         setchk,   
+	         chk,   
+	         oldbar,   
+	         remk,   
+	         prdate,   
+	         moddate,   
+	         shopno  
+	)
+	  SELECT jepmcd,   
+	         jepmnm,   
+	         makecust,   
+	         brand,   
+	         jpmkind,   
+	         price,   
+	         setchk,   
+	         chk,   
+	         oldbar,   
+	         remk,   
+	         prdate,   
+	         moddate,   
+	         shopno  
+	    FROM jepm_mst 
+	    where jepmcd = #{jepmcd} and shopno = #{shopno} and 
+		    NOT EXISTS (
+	        SELECT 1 FROM jepm_all WHERE jepmcd = #{jepmcd} 
+    		)
+</update>
+
+<update id="insertJepmdown" parameterType="java.util.HashMap"> 
+	insert into jepm_down (
+	  			jepmcd,   
+	         down,   
+	         prdate,   
+	         downdate,   
+	         shopno,   
+	)
+	select jepmcd,'N',DATEFORMAT(GETDATE(),'YYYYMMDDHHNNSS'),'',t.shopno
+	    FROM jepm_all ,(select shopno from shop_list where shopno != #{shopno} ) t
+	    where jepmcd = #{jepmcd} 
+</update>
+
+	
+<select id="selectCode" parameterType="java.util.HashMap" resultType="java.lang.String"> 
+    SELECT codenm
+    FROM code_mst
+    WHERE codegu = #{codegu}
+    ORDER BY find
+</select>
+
+
+<select id="selectByIds" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+        SELECT id, emp_no, name, equip, check_in, check_out, status, stage, sent
+        FROM attendance
+        WHERE id IN
+        <foreach collection="ids" item="i" open="(" separator="," close=")">
+            #{i}
+        </foreach>
+</select>
+
+	<update id="dataInsert" parameterType="java.util.HashMap"> 
+		INSERT INTO SAWON_MST (
+			BUSEO,CODE,NAME,IPDATE,REMK,PRDATE,MEMODATE,TELNO,HANDNO ,TOISA
+		) 
+		SELECT '0001'
+		,RIGHT('0000' + CONVERT(VARCHAR(4), MAX(CONVERT(INT, CODE)) + 1), 4) 
+		,#{NAME},REPLACE(#{IPDATE},'-',''),#{REMK},DATEFORMAT(GETDATE(),'YYYYMMDD'),'',#{TELNO},#{HANDNO},''
+		FROM  SAWON_MST 
+		WHERE <![CDATA[ CODE < '0090' ]]>
+
+	</update>	
+
+
+	<update id="dataUpdate" parameterType="java.util.HashMap"> 
+        UPDATE SAWON_MST
+        SET POSITION = #{POSITION}
+        	,NAME = #{NAME}
+        	,TELNO = #{TELNO}
+        	,HANDNO = #{HANDNO}
+        	,IPDATE = REPLACE(#{IPDATE},'-','')
+        	,REMK = #{REMK}
+        	,MEMODATE = DATEFORMAT(GETDATE(),'YYYYMMDD')
+        WHERE CODE = #{CODE}
+	</update>	
+
+	<update id="dataDelete" parameterType="java.util.HashMap"> 
+        UPDATE SAWON_MST
+        SET TOISA = DATEFORMAT(GETDATE(),'YYYYMMDD')
+	    WHERE CODE IN
+	    <foreach collection="CODE_LIST" item="code" open="(" separator="," close=")">
+	        #{code}
+	    </foreach>
+	</update>	
+
+	
+</mapper>

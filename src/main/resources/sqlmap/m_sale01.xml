@@ -1,0 +1,335 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 	<select id="findSheetList" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap">
+		<mapper namespace="sy2015Mapper">
+ -->
+<!-- 맵핑될 DAO 인터페이스의 Full name 을 줍니다. -->
+<mapper namespace="m_sale01">
+<select id="selectMain" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+  SELECT BRAND   
+         ,KIND   
+         ,JEPMCD
+         ,JEPMNM
+         ,BARCD   
+         ,PRICE     
+         ,INPRICE   
+         ,FACTPRICE   
+         ,SALEPRICE   
+         ,JPMBONUS
+         ,COMCD 
+		 ,ORDERGUBUN
+         ,JEPMSEQ
+         ,get_date_fmt(PRDATETIME)  PRDATE   
+    FROM JEPM_MST  
+    WHERE 1 = 1
+    	AND GROUPCD = #{USER.GROUPCD}
+		<if test="frmCHECK == 'on'	"> 
+	    	AND CHK = 'Y'
+		</if>
+		<if test="frmCHECK == null or frmCHECK == ''	"> 
+	    	AND CHK = 'N'
+		</if>	
+		<if test="frmBRAND != null and frmBRAND != ''	"> 
+	    	AND BRAND = #{frmBRAND}
+		</if>
+		<if test="frmKIND != null and frmKIND != ''	"> 
+	    	AND KIND = #{frmKIND}
+		</if>
+		<if test="frmJEPMNM != null and frmJEPMNM != ''	"> 
+	    	AND JEPMNM LIKE '%' + #{frmJEPMNM} + '%'
+		</if>
+		<if test="frmBARCD != null and frmBARCD != ''	"> 
+	    	AND BARCD LIKE #{frmBARCD} + '%'
+		</if>
+
+    ORDER BY GROUPCD ASC,COMCD ASC,BRAND,JEPMNM
+</select>
+
+<insert id="m_dataMCSave_mst" parameterType="java.util.HashMap">
+	  <selectKey keyProperty="SUMAMT" resultType="String" order="BEFORE">
+	  	SELECT SUM(AMT) SUMAMT FROM MC20_DTL WHERE JPNO = #{JPNO}
+	  </selectKey>
+    INSERT INTO MC20_MST  
+         ( BUSEO,			  		JPNO,              CDATE,              CUSTCD,   
+           GUBUN,              AMT,              BANPUM,              TOT,   
+           INAMT,              SKNO,              SKAMT,              SKSALE,   
+           LIST,              REMK,              PRDATE,              PRTIME,   
+           PRUSER,              LISTDATE,        LISTREDATE,			 BONUSAMT,
+		  BONUSUSE,					TAXAMT,			SENDSEQ,					LOADJPNO)  
+	VALUES (#{BUSEO},#{JPNO},#{CDATE},#{CUSTCD},
+			'매출',	#{SUMAMT} ,0 , #{SUMAMT},
+			0,'',0,0,
+			'','WEB',DATEFORMAT(GETDATE(),'YYYYMMDD'),DATEFORMAT(GETDATE(),'HHNNSS'),
+			#{USERID},'','',0,
+			0,0,0,'')
+</insert>
+
+<insert id="m_dataMCSave_dtl" parameterType="java.util.HashMap"> 
+	INSERT INTO MC20_DTL 
+	(JPNO,SEQ,CDATE,JEPMCD,AMT,QTY,PRICE,BUSEO,PLQTY,MSQTY,REMK,TAXAMT,TOTAMT )
+	VALUES
+	(#{MST.JPNO},#{SEQ},#{MST.CDATE},#{CODEKEY},#{SALEPRICE} * #{QTY},#{QTY},#{SALEPRICE},#{MST.BUSEO},#{QTY},0,'',0,#{SALEPRICE} * #{QTY})
+</insert>
+
+<update id="m_dataMCupdate_subul" parameterType="java.util.HashMap"> 
+	UPDATE SUBUL_TB SET SALE = SALE + #{QTY}, JEGO = JEGO - #{QTY} 
+			 WHERE BUSEO = #{MST.BUSEO} AND JEPMCD = #{CODEKEY} AND  YYMM = #{MST.YYMM} AND SHOPNO = '000000' 
+</update>
+
+<update id="m_dataMCDel_mst" parameterType="java.util.HashMap"> 
+	DELETE FROM MC20_MST WHERE JPNO = #{OLDJPNO}
+</update>
+
+<update id="m_dataMCDel_dtl" parameterType="java.util.HashMap"> 
+	DELETE FROM MC20_DTL WHERE JPNO = #{OLDJPNO}
+</update>
+
+<update id="m_dataSKDel_mst" parameterType="java.util.HashMap"> 
+	DELETE FROM KJSK_MST WHERE JPNO = #{OLDJPNO}
+</update>
+
+
+<update id="m_dataMCMinus_subul" parameterType="java.util.HashMap"> 
+	UPDATE SUBUL_TB SET
+		SALE = SALE + (SELECT SUM(QTY) FROM MC20_DTL D WHERE D.JEPMCD = S.JEPMCD AND JPNO = #{OLDJPNO})
+		,JEGO = JEGO - (SELECT SUM(QTY) FROM MC20_DTL D WHERE D.JEPMCD = S.JEPMCD AND JPNO = #{OLDJPNO})
+	FROM SUBUL_TB S
+	WHERE YYMM = #{YYMM} AND JEPMCD IN (SELECT JEPMCD FROM MC20_DTL WHERE JPNO = #{OLDJPNO})
+</update>
+
+<insert id="m_dataMCinsert_subul" parameterType="java.util.HashMap"> 
+	INSERT INTO SUBUL_TB (BUSEO, YYMM, JEPMCD, SALE, JEGO, SHOPNO)  
+			 SELECT #{MST.BUSEO}, #{MST.YYMM}, #{CODEKEY}, #{QTY}, - #{QTY},'000000' 
+	FROM DUMMY
+		WHERE NOT EXISTS (SELECT JEPMCD FROM SUBUL_TB J 
+										WHERE J.BUSEO = #{MST.BUSEO} AND J.JEPMCD = #{CODEKEY} 
+										AND  J.YYMM = #{MST.YYMM} AND J.SHOPNO = '000000') 
+</insert>
+		
+<insert id="m_dataSKSave" parameterType="java.util.HashMap"> 
+	  INSERT INTO KJSK_MST  
+	         ( BUSEO
+	         ,JPNO
+	         ,KJSKDATE
+	         ,KJSKGU
+	         ,CUSTCD
+	         ,CASHAMT
+	         ,TOTAMT
+	         ,REMK
+	         ,PRDATE
+	         ,PRUSER
+	         ,KIND )  
+	SELECT 	#{BUSEO}   
+	        ,#{JPNO}   
+	        ,#{KJSKDATE}
+	        ,'수금'
+	        ,#{CUSTCD}
+	        ,#{CASHAMT}
+	        ,#{CASHAMT}
+	        ,#{REMK}
+	        ,#{PRDATE}
+	        ,#{PRUSER}
+	        ,'WEB'
+			FROM DUMMY 
+</insert>
+
+<select id="m_SENSselectCustList" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+	SELECT SABUNNM
+		,CUSTCD
+		,CUSTNAME
+		,OWNER
+		,TELNO
+		,HANDNO
+		,ADDR1 + ADDR2 ADDR
+		,FN_GET_CUST_MISU(#{BUSEO},CUSTCD,DATEFORMAT(MONTHS(NOW(), -1), 'yyyymm')) MISUAMT
+	FROM CUST_MST 
+	WHERE BUSEO = #{BUSEO} AND MIMC = #{MIMC} 
+		AND (CUSTNAME LIKE #{FIND} + '%' OR TELNO LIKE '%' + #{FIND} OR HANDNO LIKE '%' + #{FIND} OR OWNER LIKE '%' + #{FIND} OR REMK LIKE '%' + #{FIND}) 
+		AND 		 CHK = 'Y'
+</select>
+
+<select id="m_getJepumSearch" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+	SELECT JEPMCD CODE
+		,JEPMCD1  
+		,BRAND
+		,JEPMNM
+		,PRICE
+		,SALEPRICE
+		,BARCD
+	FROM JEPM_MST 
+	WHERE GUBUN = #{BUSEO} 
+		<if test="GUBUN == 'BOOK'	"> 
+			AND SENDGBN = 'Y'
+		</if>
+		<if test="GUBUN == 'SECTION'	"> 
+			AND BRAND = #{FIND}
+		</if>
+		<if test="GUBUN == 'NAME'	"> 
+			AND JEPMNM LIKE #{FIND} + '%' 
+		</if>
+		<if test="GUBUN == 'CODE'	"> 
+			AND JEPMCD1 LIKE #{FIND} + '%' 
+		</if>
+		AND 		 CHK = 'Y'
+</select>
+
+<select id="m_getBrandSearch" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+	SELECT DISTINCT
+		BRAND
+	FROM JEPM_MST 
+	WHERE GUBUN = #{BUSEO} 
+		AND 		 CHK = 'Y'
+	ORDER BY 1
+</select>
+<!--
+DATEFORMAT(DATEADD(MONTH, -1, '20260315'),'YYYYMM')
+-->
+
+<select id="m_getCustMCSK" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+	 <![CDATA[
+		SELECT CUSTCD,#{YYMM} + '99' CDATE,#{YYMM} + '99' JPNO,1 SEQ,'이월' GUBUN,0 MCAMT,0 SKAMT,JANAMT MISUAMT FROM KJSK_TB 
+		WHERE BUSEO = #{BUSEO} AND CUSTCD = #{CUSTCD} AND YYMM = #{YYMM} AND MIMCGU = '수금'
+	UNION ALL
+		SELECT CUSTCD,CDATE,JPNO,1 SEQ,'매출' GUBUN,AMT MCAMT,0 SKAMT,0 JANAMT FROM MC20_MST 
+		WHERE BUSEO = #{BUSEO} AND CUSTCD = #{CUSTCD} AND CDATE > #{YYMM} + '99' AND GUBUN = '매출' AND AMT <> 0
+	UNION ALL
+		SELECT CUSTCD,CDATE,JPNO,2 SEQ,'반품' GUBUN,BANPUM MCAMT,0 SKAMT,0 JANAMT FROM MC20_MST 
+		WHERE BUSEO = #{BUSEO} AND CUSTCD = #{CUSTCD} AND CDATE > #{YYMM} + '99' AND GUBUN = '매출' AND BANPUM <> 0
+	UNION ALL
+		SELECT CUSTCD,KJSKDATE,JPNO,1 SEQ,'수금' GUBUN,0 MCAMT,CASHAMT SKAMT,0 JANAMT FROM KJSK_MST 
+		WHERE BUSEO = #{BUSEO} AND CUSTCD = #{CUSTCD} AND KJSKDATE > #{YYMM} + '99' AND KJSKGU = '수금' AND CASHAMT <> 0
+	UNION ALL
+		SELECT CUSTCD,KJSKDATE,JPNO,2 SEQ,'할인' GUBUN,0 MCAMT,SALEAMT SKAMT,0 JANAMT FROM KJSK_MST 
+		WHERE BUSEO = #{BUSEO} AND CUSTCD = #{CUSTCD} AND KJSKDATE > #{YYMM} + '99' AND KJSKGU = '수금' AND SALEAMT <> 0
+	ORDER BY 1,2,3,4
+	   ]]>
+</select>
+
+<select id="m_MCSKQuery" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+	 <![CDATA[
+		SELECT M.CUSTCD,C.CUSTNAME,M.CDATE,M.JPNO,'매출' GUBUN,M.AMT,M.BANPUM BANPUM,0 SKAMT,0 SALEAMT,0 JANAMT FROM MC20_MST M,CUST_MST C
+		WHERE M.CUSTCD = C.CUSTCD AND M.BUSEO = #{BUSEO} AND M.CDATE BETWEEN #{STARTDATE} AND #{ENDDATE}  AND M.GUBUN = '매출' 
+	UNION ALL
+		SELECT K.CUSTCD,C.CUSTNAME,KJSKDATE,K.JPNO,'수금' GUBUN,0 MCAMT,0 BANPUM,CASHAMT SKAMT,SALEAMT SALE,0 JANAMT FROM KJSK_MST K,CUST_MST C
+		WHERE K.CUSTCD = C.CUSTCD AND K.BUSEO = #{BUSEO} AND K.KJSKDATE BETWEEN #{STARTDATE} AND #{ENDDATE}  AND K.KJSKGU = '수금' 
+	ORDER BY 2,3,4
+	   ]]>
+</select>
+
+<select id="m_JPNOMCSKQuery" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+	 <![CDATA[
+		SELECT C.CUSTNAME CUSTNAME
+				,M.JPNO JPNO
+				,M.CUSTCD CUSTCD
+				,M.CDATE CDATE
+				,M.GUBUN GUBUN
+				,M.TOT TOTAMT
+				,0 CASHAMT
+				,0 SALEAMT
+				,M.REMK
+				,D.SEQ SEQ
+				,D.JEPMCD JEPMCD
+				,J.JEPMCD1 JEPMCD1
+				,J.BRAND BRAND
+				,J.JEPMNM JEPMNM
+				,J.PRICE PRICE
+				,D.PRICE SALEPRICE
+				,D.QTY QTY
+				,D.AMT
+		FROM CUST_MST C,MC20_MST M,MC20_DTL D,JEPM_MST J
+		WHERE M.CUSTCD = C.CUSTCD AND M.JPNO = D.JPNO AND D.JEPMCD = J.JEPMCD AND M.JPNO = #{JPNO}
+	UNION ALL
+		SELECT C.CUSTNAME
+				,K.JPNO JPNO
+				,K.CUSTCD
+				,K.KJSKDATE
+				,K.KJSKGU
+				,0
+				,K.CASHAMT
+				,K.SALEAMT
+				,K.REMK
+				,0
+				,''
+				,''
+				,''
+				,''
+				,0
+				,0
+				,0
+				,0
+		 FROM CUST_MST C,KJSK_MST K
+		WHERE K.CUSTCD = C.CUSTCD AND K.JPNO = #{JPNO}
+	   ]]>
+</select>
+
+<insert id="dataInsert" parameterType="java.util.HashMap"> 
+	  <selectKey keyProperty="JEPMSEQ" resultType="String" order="BEFORE">
+	  	SELECT ISNULL(MAX(CONVERT(DOUBLE,JEPMSEQ)),0) + 1 JEPMSEQ FROM JEPM_MST
+	  </selectKey>
+		INSERT INTO JEPM_MST (
+		  		 GROUPCD   
+		         ,GROUPNAME   
+				 ,BRAND   
+		         ,KIND   
+		         ,JEPMCD
+		         ,JEPMNM
+		         ,BARCD   
+		         ,PRICE     
+		         ,INPRICE   
+		         ,FACTPRICE   
+		         ,SALEPRICE   
+		         ,JPMBONUS
+		         ,COMCD 
+				 ,ORDERGUBUN
+		         ,JEPMSEQ
+		         ,PRDATETIME
+		         ,PRUSERID
+		         ,CHK
+		)
+		SELECT 
+		  		#{USER.GROUPCD}   
+		        ,#{USER.GROUPNAME}   
+		        ,#{BRAND}
+		        ,#{KIND}
+		        ,#{JEPMCD}
+		        ,#{JEPMNM}
+		        ,#{BARCD}
+		        ,#{PRICE}
+		        ,#{INPRICE}
+		        ,0
+		        ,#{SALEPRICE}
+		        ,#{JPMBONUS}
+		        ,''
+		        ,''
+		        ,#{JEPMSEQ}
+		        ,DATEFORMAT(GETDATE(),'YYYYMMDDHHNNSS')
+		        ,#{USER.USERID}
+		        ,'Y'
+		FROM DUMMY 
+</insert>
+
+<update id="dataUpdate" parameterType="java.util.HashMap"> 
+		UPDATE JEPM_MST SET
+				 BRAND    = #{BRAND}
+		         ,KIND    = #{KIND}
+		         ,JEPMCD = #{JEPMCD}
+		         ,JEPMNM = #{JEPMNM}
+		         ,BARCD    = #{BARCD}
+		         ,PRICE      = #{PRICE}
+		         ,INPRICE    = #{INPRICE}
+		         ,SALEPRICE    = #{SALEPRICE}
+		         ,JPMBONUS = #{JPMBONUS}
+				,EDITUSERID = #{USER.USERID}
+				,EDITDATETIME = DATEFORMAT(GETDATE(),'YYYYMMDDHHNNSS')
+		WHERE JEPMSEQ = #{JEPMSEQ}
+</update>	
+
+<update id="dataDelete" parameterType="java.util.HashMap"> 
+		UPDATE JEPM_MST SET
+				CHK = 'N'
+				,EDITUSERID = #{USER.USERID}
+				,EDITDATETIME = DATEFORMAT(GETDATE(),'YYYYMMDDHHNNSS')
+		WHERE JEPMSEQ = #{JEPMSEQ}
+</update>	
+	
+</mapper>

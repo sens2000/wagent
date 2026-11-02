@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 	<select id="findSheetList" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap">
+		<mapper namespace="sy2015Mapper">
+ -->
+<!-- 맵핑될 DAO 인터페이스의 Full name 을 줍니다. -->
+<mapper namespace="com.sens.lush.service.dao.loginDAO">
+
+<!--
+//select * from prog_info order by newid;
+//select max(convert(int,progid)) from prog_info;
+insert into prog_info 
+select 
+convert(char(4),(select max(convert(int,progid)) from prog_info) + number(*))
+,program
+,progname
+,'m_' + progkind
+,newid
+,parm
+,company
+,gubun
+from prog_list
+where gubun = '01'; 
+
+insert into user_prog 
+select 'polsse' ,progid from prog_info where progkind like 'm_%';
+ -->
+<!-- id 속성은 DAO 의 메소드와 같아야 한다. 여기의 boardVO 는 mybatis-confg.xml 에 Alias 되어 있습니다. -->
+<select id="loginCheck" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+	SELECT USERID
+		,USERPASS
+		,BUSEO
+		,GRADE
+		,POSITION
+		,NAME
+	FROM SAWON_MST A 
+		WHERE 1=1 
+		AND TOISA = ''
+		AND USERID != ''
+		AND A.USERID = #{SID} 
+		AND A.USERPASS = #{SPASS}
+</select>
+
+<select id="PosInfo" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+	SELECT CUSTCD
+		,CUSTNAME
+		,OWNER
+		,SANO
+		,TELNO
+		,SOADDR + SUBADDR	CUADDR
+		,PRICEWAY
+	FROM USER_MST 
+	WHERE CUSTCD = #{BUSEO}
+</select>
+
+			
+<select id="menuGroup" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+	SELECT P.GUBUN,P.PROGRAM,P.PROGNAME,P.PROGKIND,P.PARM,P.COMPANY 
+    FROM PROG_INFO P,            USER_PROG  U
+   WHERE P.PROGID = U.PROGID 
+   	AND U.USERID = 'polsse'
+   	AND P.GUBUN != ''
+   	AND P.PROGKIND = #{PROGKIND}  
+	ORDER BY P.NEWID
+</select>
+
+<select id="menuAgent" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+	SELECT PROGRAM
+		,NAME
+		,GUBUN
+		,CHK
+		,WEBID 
+	FROM PROG_INFO 
+	WHERE GRADE > 0 and GUBUN != ''
+	ORDER BY GUBUN
+</select>
+
+<select id="selectGroupNews" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+	  SELECT CUST_MST.SABUNNM,
+		 CUST_MST.CUSTNAME,   
+	         CUST_MST.TELNO,   
+	         MEMO_TBL.CUSTCD,   
+	         MEMO_TBL.SEQ,   
+	         MEMO_TBL.MEMO,   
+	         MEMO_TBL.PRDATE,   
+	         MEMO_TBL.PRTIME,   
+	         MEMO_TBL.GUBUN,   
+	         MEMO_TBL.STAT,   
+	         MEMO_TBL.PLANDATE,   
+	         MEMO_TBL.OKDATE,   
+	         MEMO_TBL.OKID  
+	    FROM MEMO_TBL  ,CUST_MST
+	   WHERE MEMO_TBL.CUSTCD = CUST_MST.CUSTCD
+	     AND MEMO_TBL.STAT LIKE '' AND MEMO_TBL.PLANDATE != ''
+	ORDER BY MEMO_TBL.PLANDATE,CUST_MST.CUSTNAME ASC   
+</select>
+
+<select id="selectComDay" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+	SELECT CDATE,SUM(AMT) AMT,SUM(BANPUM) BANPUM,SUM(SKAMT) SKAMT,SUM(SALEAMT) SALEAMT,SUM(INAMT) INAMT,SUM(KJAMT) KJAMT
+	FROM (
+		SELECT CDATE, SUM(AMT) AMT, SUM(BANPUM) BANPUM,0 SKAMT,0 SALEAMT ,0 INAMT,0 KJAMT 
+		FROM MC20_MST
+		WHERE MC20_MST.BUSEO = '0001' AND 
+			MC20_MST.CDATE BETWEEN DATEFORMAT(GETDATE() -40 ,'YYYYMM00') AND DATEFORMAT(GETDATE() ,'YYYYMMDD') GROUP BY CDATE  
+	UNION ALL
+		SELECT KJSKDATE, 0,		0,				SUM(CASHAMT), SUM(SALEAMT + BIAMT), 0,	0
+		FROM KJSK_MST 
+		WHERE BUSEO = '0001' AND KJSKDATE BETWEEN DATEFORMAT(GETDATE() -40 ,'YYYYMM00') AND DATEFORMAT(GETDATE() ,'YYYYMMDD') 
+			AND KJSKGU = '수금' GROUP BY KJSKDATE
+	UNION ALL
+		SELECT IPDATE, 0,	0,	0,0,	SUM(AMT - BANPUM), 0
+		FROM IP01_MST 
+		WHERE BUSEO = '0001' AND IP01_MST.IPDATE BETWEEN DATEFORMAT(GETDATE() -40 ,'YYYYMM00') AND DATEFORMAT(GETDATE() ,'YYYYMMDD') 
+			AND GUBUN = '매입' GROUP BY IPDATE
+	UNION ALL
+		SELECT KJSKDATE, 0,		0,		0,	0,	0,				SUM(CASHAMT - SALEAMT - BIAMT)
+		FROM KJSK_MST 
+		WHERE BUSEO = '0001' AND KJSKDATE BETWEEN DATEFORMAT(GETDATE() -40 ,'YYYYMM00') AND DATEFORMAT(GETDATE() ,'YYYYMMDD') 
+		AND KJSKGU = '결재' GROUP BY KJSKDATE
+	) AS T
+	GROUP BY CDATE
+	ORDER BY CDATE
+</select>
+	
+</mapper>

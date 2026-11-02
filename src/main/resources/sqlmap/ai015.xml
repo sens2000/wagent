@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 맵핑될 DAO 인터페이스의 Full name 을 줍니다. -->
+<mapper namespace="ai015">
+
+<select id="selectMain" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+       SELECT
+            POSITION,
+            CODE,
+            NAME,
+            TELNO,
+            HANDNO,
+            CONVERT(VARCHAR(10), IPDATE, 23) AS IPDATE,
+            REMK,
+            CONVERT(VARCHAR(10), PRDATE, 23) AS PRDATE
+        FROM SAWON_MST
+        WHERE TOISA = '' 
+            <if test="name != null and name != ''">
+                AND NAME LIKE '%' + #{name} + '%'
+            </if>
+        ORDER BY CODE
+</select>
+
+<select id="selectCode" parameterType="java.util.HashMap" resultType="java.lang.String"> 
+    SELECT codenm
+    FROM code_mst
+    WHERE codegu = #{codegu}
+    ORDER BY find
+</select>
+
+
+<select id="selectByIds" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+        SELECT id, emp_no, name, equip, check_in, check_out, status, stage, sent
+        FROM attendance
+        WHERE id IN
+        <foreach collection="ids" item="i" open="(" separator="," close=")">
+            #{i}
+        </foreach>
+</select>
+
+	<update id="dataInsert" parameterType="java.util.HashMap"> 
+		INSERT INTO SAWON_MST (
+			BUSEO,CODE,NAME,IPDATE,REMK,PRDATE,MEMODATE,TELNO,HANDNO ,TOISA
+		) 
+		SELECT '0001'
+		,RIGHT('0000' + CONVERT(VARCHAR(4), MAX(CONVERT(INT, CODE)) + 1), 4) 
+		,#{NAME},REPLACE(#{IPDATE},'-',''),#{REMK},DATEFORMAT(GETDATE(),'YYYYMMDD'),'',#{TELNO},#{HANDNO},''
+		FROM  SAWON_MST 
+		WHERE <![CDATA[ CODE < '0090' ]]>
+
+	</update>	
+
+
+	<update id="dataUpdate" parameterType="java.util.HashMap"> 
+        UPDATE SAWON_MST
+        SET POSITION = #{POSITION}
+        	,NAME = #{NAME}
+        	,TELNO = #{TELNO}
+        	,HANDNO = #{HANDNO}
+        	,IPDATE = REPLACE(#{IPDATE},'-','')
+        	,REMK = #{REMK}
+        	,MEMODATE = DATEFORMAT(GETDATE(),'YYYYMMDD')
+        WHERE CODE = #{CODE}
+	</update>	
+
+	<update id="dataDelete" parameterType="java.util.HashMap"> 
+        UPDATE SAWON_MST
+        SET TOISA = DATEFORMAT(GETDATE(),'YYYYMMDD')
+	    WHERE CODE IN
+	    <foreach collection="CODE_LIST" item="code" open="(" separator="," close=")">
+	        #{code}
+	    </foreach>
+	</update>	
+
+	
+</mapper>

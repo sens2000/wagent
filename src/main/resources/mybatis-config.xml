@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?> 
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "http://mybatis.org/dtd/mybatis-3-config.dtd"> 
+<configuration> 
+	<!-- 여러가지 기본 옵션을 지정합니다. --> 
+	<settings> 
+		<!-- 오라클 필드 속성이 READ_COUNT 처럼 언더 스코어가 있을 때 VO 의 readCount 처럼 카멜 케이스로 변환 되게 합니다. --> 
+		<setting name="mapUnderscoreToCamelCase" value="true"/> 
+		<!-- MAP 처리시 Null 항목도 표기 -->
+		<setting name="callSettersOnNulls" value="true"/>
+		<setting name="logImpl" value="LOG4J"/>
+	</settings> 
+	<typeAliases> 
+		<typeAlias alias="loginVO" type="com.sens.lush.vo.loginVO"/> 
+	</typeAliases>
+	 
+    <typeHandlers>
+        <typeHandler handler="com.sens.lush.util.LongHandler" javaType="String" jdbcType="LONGVARCHAR"/>
+    </typeHandlers>
+<!-- 	
+ -->	
+</configuration>
+

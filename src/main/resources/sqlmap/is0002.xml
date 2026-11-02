@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 	<select id="findSheetList" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap">
+		<mapper namespace="sy2015Mapper">
+ -->
+<!-- 맵핑될 DAO 인터페이스의 Full name 을 줍니다. -->
+<mapper namespace="is0002">
+<select id="selectMain" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+  SELECT GROUPCD,   
+         GROUPNAME,   
+         COMCD,   
+         COMNAME,   
+         ACCTGRPCD,   
+         ACCTGRPNM,   
+         ACCTCD,   
+         ACCTNM,   
+         SYS,   
+         get_date_fmt(PRDATETIME)  PRDATE,   
+         CHK,   
+         INOUT  
+    FROM ACCT_TB   
+    WHERE CHK = 'Y'
+    	AND GROUPCD = #{USER.GROUPCD}
+    	AND COMCD = #{USER.COMCD}
+		<if test="frmCHECK == 'on'	"> 
+	    	AND CHK = 'Y'
+		</if>
+		<if test="frmCHECK == null or frmCHECK == ''	"> 
+	    	AND CHK = 'N'
+		</if>	
+		<if test="frmINOUT != null and frmINOUT != ''	and frmINOUT != '전체'"> 
+	    	AND INOUT = #{frmINOUT}
+		</if>
+		<if test="frmACCTNAME != null and frmACCTNAME != ''	"> 
+	    	AND ACCTNM LIKE '%' + #{frmACCTNAME} + '%'
+		</if>
+    ORDER BY GROUPCD ASC,COMCD ASC,INOUT,ACCTNM 
+</select>
+
+	<insert id="dataInsert" parameterType="java.util.HashMap"> 
+	  <selectKey keyProperty="ACCTCD" resultType="String" order="BEFORE">
+	  	SELECT ISNULL(MAX(CONVERT(INT,ACCTCD)),0) + 1 ACCTCD FROM ACCT_TB WHERE COMCD = #{USER.COMCD}
+	  </selectKey>
+	  	
+		INSERT INTO ACCT_TB (
+		  		 GROUPCD   
+		         ,GROUPNAME   
+		         ,COMCD   
+		         ,COMNAME
+		         ,ACCTGRPCD   
+		         ,ACCTGRPNM   
+		         ,ACCTCD   
+		         ,ACCTNM   
+		         ,SYS   
+		         ,INOUT 		
+		         ,PRDATETIME
+		         ,PRUSERID
+		         ,CHK   
+		)
+		SELECT 
+		  		#{USER.GROUPCD}   
+		        ,#{USER.GROUPNAME}   
+		        ,#{USER.COMCD}   
+		        ,#{USER.COMNAME}   
+		        ,''   
+		        ,#{ACCTGRPNM}
+		        ,#{ACCTCD}
+		        ,#{ACCTNM}
+		        ,'N'
+		        ,#{INOUT}
+		        ,DATEFORMAT(GETDATE(),'YYYYMMDDHHNNSS')
+		        ,#{USER.USERID}
+		        ,'Y'
+		FROM DUMMY 
+		WHERE NOT EXISTS (SELECT 1 FROM ACCT_TB C WHERE C.COMCD = #{USER.COMCD} AND ACCTCD = #{ACCTCD} )
+	</insert>
+
+	<update id="dataUpdate" parameterType="java.util.HashMap"> 
+		UPDATE ACCT_TB SET
+				ACCTGRPNM = #{ACCTGRPNM}
+				,ACCTNM = #{ACCTNM}
+				,INOUT = #{INOUT}
+				,EDITUSERID = #{USER.USERID}
+				,EDITDATETIME = DATEFORMAT(GETDATE(),'YYYYMMDDHHNNSS')
+		WHERE ACCTCD = #{ACCTCD} AND COMCD = #{COMCD}
+	</update>	
+
+	<update id="dataDelete" parameterType="java.util.HashMap"> 
+		UPDATE ACCT_TB SET
+				CHK = 'N'
+				,EDITUSERID = #{USER.USERID}
+				,EDITDATETIME = DATEFORMAT(GETDATE(),'YYYYMMDDHHNNSS')
+		WHERE ACCTCD = #{ACCTCD} AND COMCD = #{COMCD}
+	</update>	
+
+<!--
+	alter table acct_tb add prdatetime char(14) DEFAULT '';
+	alter table acct_tb add pruserid char(20) DEFAULT '';
+	alter table acct_tb add editdatetime char(14) DEFAULT '';
+	alter table acct_tb add edituserid char(20) DEFAULT '' ;
+	
+<insert id="insertAuthor">
+  <selectKey keyProperty="id" resultType="int" order="BEFORE">
+    select CAST(RANDOM()*1000000 as INTEGER) a from SYSIBM.SYSDUMMY1
+  </selectKey>
+  insert into Author
+    (id, username, password, email,bio, favourite_section)
+  values
+    (#{id}, #{username}, #{password}, #{email}, #{bio}, #{favouriteSection,jdbcType=VARCHAR})
+</insert>
+
+	
+ -->
+</mapper>

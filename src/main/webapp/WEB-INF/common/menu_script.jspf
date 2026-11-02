@@ -1,0 +1,101 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<script>
+// 컨트롤러에서 request.setAttribute("menuJson", ...) 로 내려준 값
+// (Service.menuAgent 결과를 ObjectMapper로 JSON 직렬화한 문자열)
+var menuData = ${menuJson};
+
+// ---- 메뉴 트리 빌드 & 렌더링 ----
+// GUBUN 길이 = 메뉴 레벨, 마지막 한 글자를 뗀 값이 부모의 GUBUN
+// CHK === "G" 인 항목은 하위메뉴를 가진 그룹(접었다 펼치는 헤더)
+function buildMenuTree(menuList, parentGubun) {
+  return menuList.filter(function (item) {
+    var g = (item.GUBUN || "").trim();
+    if (parentGubun === "") {
+      return g === "" || g.length === 1;
+    }
+    return g.length === parentGubun.length + 1 && g.indexOf(parentGubun) === 0;
+  });
+}
+
+function renderMenuNodes(items, allMenuList, ulEl, depth, idPrefix) {
+  items.forEach(function (item, idx) {
+    var g = (item.GUBUN || "").trim();
+    var li = document.createElement("li");
+    li.className = "nav-item" + (depth === 0 ? " mt-3" : "");
+
+    if (item.CHK === "G") {
+      var collapseId = idPrefix + "_menuGroup_" + (g || "root") + "_" + idx;
+      li.innerHTML =
+        '<a class="nav-link menu-group-link d-flex justify-content-between align-items-center" ' +
+        'style="padding-left:' + (12 + depth * 16) + 'px" ' +
+        'data-bs-toggle="collapse" href="#' + collapseId + '" role="button" ' +
+        'aria-expanded="false" aria-controls="' + collapseId + '">' +
+          item.NAME + '<span class="chevron">&#9662;</span>' +
+        '</a>' +
+        '<div class="collapse" id="' + collapseId + '">' +
+          '<ul class="nav flex-column gap-1"></ul>' +
+        '</div>';
+
+      var childUl = li.querySelector("ul");
+      renderMenuNodes(buildMenuTree(allMenuList, g), allMenuList, childUl, depth + 1, idPrefix);
+    } else {
+      li.innerHTML =
+        '<a class="nav-link menu-program-link sidebar-heading text-uppercase small fw-bold" style="padding-left:' + (12 + depth * 16) + 'px" href="/' + item.WEBID + '.do">' +
+          item.NAME +
+        '</a>';
+    }
+
+    ulEl.appendChild(li);
+  });
+}
+
+function renderSidebarMenu(menuList, containerSelector, idPrefix) {
+  var container = document.querySelector(containerSelector);
+  var ul = document.createElement("ul");
+  ul.className = "nav flex-column gap-1";
+  renderMenuNodes(buildMenuTree(menuList, ""), menuList, ul, 0, idPrefix);
+  container.innerHTML = "";
+  container.appendChild(ul);
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  // 메뉴 렌더링 (데스크탑 / 모바일 각각 다른 id prefix로 충돌 방지)
+  renderSidebarMenu(menuData, "#sidebarMenu", "d");
+  renderSidebarMenu(menuData, "#sidebarMenuMobile", "m");
+
+  // 모바일 메뉴: 항목 선택 시 오프캔버스 자동 닫기 (메뉴가 그려진 뒤에 걸어야 함)
+  var sidebarOffcanvasEl = document.getElementById("sidebarOffcanvas");
+  var sidebarOffcanvas = bootstrap.Offcanvas.getOrCreateInstance(sidebarOffcanvasEl);
+  sidebarOffcanvasEl
+    .querySelectorAll(".nav-link:not([data-bs-toggle='collapse'])")
+    .forEach(function (link) {
+      link.addEventListener("click", function () {
+        sidebarOffcanvas.hide();
+      });
+    });
+});
+
+function handleLogout() {
+	  fetch("/s_logout.do", { method: "POST" })
+	    .then(function () { window.location.href = "/sens.jsp"; })
+	    .catch(function () { window.location.href = "/sens.jsp"; }); // 실패해도 어차피 로그인 화면으로
+	}
+	
+function checkLogin() {
+	  fetch("s_me.do")
+	    .then(function (res) { return res.json(); })
+	    .then(function (result) {
+	      if (!result.success) {
+	        window.location.href = "sens.jsp";
+	        return;
+	      }
+	      const member = result.data;
+	      document.getElementById("userLabel").textContent =
+	          (member.USERNAME || member.NAME || member.USERID) + "님";
+	    })
+	    .catch(function () {
+	      window.location.href = "sens.jsp";
+	    });
+	}	
+</script>

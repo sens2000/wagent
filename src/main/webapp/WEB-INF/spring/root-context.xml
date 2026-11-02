@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-4.3.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.3.xsd">
+
+<aop:aspectj-autoproxy />
+
+<!-- 데이터베이스 연결 -->
+<!-- 
+<context:property-placeholder location="classpath:database.properties" />
+ -->
+<!-- 
+	<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close"> 
+		<property name="driverClassName" value="oracle.jdbc.OracleDriver"/> 
+		<property name="url" value="jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=192.168.3.21)(PORT=1734))(CONNECT_DATA=(SERVICE_NAME=LUSHKR)))" /> 
+		<property name="username" value="LUSH_KR"/> 
+		<property name="password" value="realLush!123"/> 
+	</bean>
+ -->
+
+ <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+    <property name="locations" value="classpath:/database.properties" />
+    <property name="fileEncoding" value="UTF-8" />
+</bean>
+ 
+
+
+<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close"> 
+	<property name="driverClassName" value="${jdbc.driver}"/> 
+	<property name="url" value="${jdbc.url}" /> 
+	<property name="username" value="${jdbc.username}"/> 
+	<property name="password" value="${jdbc.password}"/> 
+	
+	<!-- 구 버전 DBCP 속성 (maxTotal 대신 maxActive 사용) -->
+	<property name="maxActive" value="20" />        <!-- 최대 연결 수 -->
+	<property name="maxIdle" value="10" />          <!-- 최대 유휴 연결 -->
+	<property name="minIdle" value="5" />           <!-- 최소 유휴 연결 -->
+	<property name="initialSize" value="5" />       <!-- 초기 연결 수 -->
+	<property name="maxWait" value="30000" />       <!-- 연결 대기 시간 -->
+		<!-- 연결 유효성 검사 -->
+		<property name="testOnBorrow" value="true" />
+		<property name="testOnReturn" value="true" />
+		<property name="testWhileIdle" value="true" />
+		<property name="validationQuery" value="SELECT 1" />
+		<property name="timeBetweenEvictionRunsMillis" value="30000" />
+		<property name="numTestsPerEvictionRun" value="3" />
+		
+		<!-- 연결 재시도 -->
+		<property name="connectionProperties" value="autoReconnect=true" />	
+</bean>
+
+<bean id="dataSourceIps" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close"> 
+	<property name="driverClassName" value="${jdbc.driver.ips}"/> 
+	<property name="url" value="${jdbc.url.ips}" /> 
+	<property name="username" value="${jdbc.username.ips}"/> 
+	<property name="password" value="${jdbc.password.ips}"/> 
+	
+	<!-- 구 버전 DBCP 속성 (maxTotal 대신 maxActive 사용) -->
+	<property name="maxActive" value="20" />        <!-- 최대 연결 수 -->
+	<property name="maxIdle" value="10" />          <!-- 최대 유휴 연결 -->
+	<property name="minIdle" value="5" />           <!-- 최소 유휴 연결 -->
+	<property name="initialSize" value="5" />       <!-- 초기 연결 수 -->
+	<property name="maxWait" value="30000" />       <!-- 연결 대기 시간 -->
+		<!-- 연결 유효성 검사 -->
+		<property name="testOnBorrow" value="true" />
+		<property name="testOnReturn" value="true" />
+		<property name="testWhileIdle" value="true" />
+		<property name="validationQuery" value="SELECT 1" />
+		<property name="timeBetweenEvictionRunsMillis" value="30000" />
+		<property name="numTestsPerEvictionRun" value="3" />
+		
+		<!-- 연결 재시도 -->
+		<property name="connectionProperties" value="autoReconnect=true" />	
+</bean>
+
+<!-- SqlSession --> 
+<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean " primary="true"> 
+	<property name="dataSource" ref="dataSource" /> 
+	<!-- MyBatis 설정 파일의 위치를 지정합니다. --> 
+	<property name="configLocation" value="classpath:/mybatis-config.xml" />
+	<!-- 
+	 --> 
+	<!-- SQL 파일의 위치를 지정합니다. -->
+	<property name="mapperLocations" value="classpath:/sqlmap/*.xml" />
+	<!--  
+	 --> 
+</bean>
+
+<bean id="sqlSessionFactoryIPS" class="org.mybatis.spring.SqlSessionFactoryBean"> 
+	<property name="dataSource" ref="dataSourceIps" /> 
+	<property name="configLocation" value="classpath:/mybatis-config.xml" />
+	<property name="mapperLocations" value="classpath:/sqlmap/*.xml" />
+</bean>
+	
+<!-- SqlSession --> 
+	<bean id="sqlSession" class="org.mybatis.spring.SqlSessionTemplate" destroy-method="clearCache"> 
+		<constructor-arg ref="sqlSessionFactory" /> 
+	</bean>
+
+	<bean id="sqlSessionIPS" class="org.mybatis.spring.SqlSessionTemplate" destroy-method="clearCache"> 
+		<constructor-arg ref="sqlSessionFactoryIPS" /> 
+	</bean>
+		
+<!-- 지정된 베이스 패키지에서 DAO(Mapper) 를 검색하여 등록합니다. -->
+<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer"> 
+	<property name="basePackage" value="com.sens.lush.service.dao" /> 
+	<property name="sqlSessionFactoryBeanName" value="sqlSessionFactory" />
+</bean>
+
+<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+	<property name="basePackage" value="com.sens.lush.service.dao" />
+	<property name="sqlSessionFactoryBeanName" value="sqlSessionFactoryIPS" />
+</bean>
+	
+<!-- 트랜잭션 매니저 bean 을 등록합니다. --> 
+<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager"> 
+	<property name="dataSource" ref="dataSource" /> 
+</bean>
+<!-- 아노테이션 기반의 트랜잭션을 사용합니다. --> 
+<tx:annotation-driven transaction-manager="transactionManager"/>
+
+
+	
+	<!-- Root Context: defines shared resources visible to all other web components -->
+		
+</beans>

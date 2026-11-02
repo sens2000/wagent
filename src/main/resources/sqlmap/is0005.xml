@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 	<select id="findSheetList" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap">
+		<mapper namespace="sy2015Mapper">
+ -->
+<!-- 맵핑될 DAO 인터페이스의 Full name 을 줍니다. -->
+<mapper namespace="is0005">
+<select id="selectMain" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+  SELECT BRAND   
+         ,KIND   
+         ,JEPMCD
+         ,JEPMNM
+         ,BARCD   
+         ,PRICE     
+         ,INPRICE   
+         ,FACTPRICE   
+         ,SALEPRICE   
+         ,JPMBONUS
+         ,COMCD 
+		 ,ORDERGUBUN
+         ,JEPMSEQ
+         ,get_date_fmt(PRDATETIME)  PRDATE   
+    FROM JEPM_MST  
+    WHERE 1 = 1
+    	AND GROUPCD = #{USER.GROUPCD}
+		<if test="frmCHECK == 'on'	"> 
+	    	AND CHK = 'Y'
+		</if>
+		<if test="frmCHECK == null or frmCHECK == ''	"> 
+	    	AND CHK = 'N'
+		</if>	
+		<if test="frmBRAND != null and frmBRAND != ''	"> 
+	    	AND BRAND = #{frmBRAND}
+		</if>
+		<if test="frmKIND != null and frmKIND != ''	"> 
+	    	AND KIND = #{frmKIND}
+		</if>
+		<if test="frmJEPMNM != null and frmJEPMNM != ''	"> 
+	    	AND JEPMNM LIKE '%' + #{frmJEPMNM} + '%'
+		</if>
+		<if test="frmBARCD != null and frmBARCD != ''	"> 
+	    	AND BARCD LIKE #{frmBARCD} + '%'
+		</if>
+
+    ORDER BY GROUPCD ASC,COMCD ASC,BRAND,JEPMNM
+</select>
+
+	<insert id="dataInsert" parameterType="java.util.HashMap"> 
+	  <selectKey keyProperty="JEPMSEQ" resultType="String" order="BEFORE">
+	  	SELECT ISNULL(MAX(CONVERT(DOUBLE,JEPMSEQ)),0) + 1 JEPMSEQ FROM JEPM_MST
+	  </selectKey>
+		INSERT INTO JEPM_MST (
+		  		 GROUPCD   
+		         ,GROUPNAME   
+				 ,BRAND   
+		         ,KIND   
+		         ,JEPMCD
+		         ,JEPMNM
+		         ,BARCD   
+		         ,PRICE     
+		         ,INPRICE   
+		         ,FACTPRICE   
+		         ,SALEPRICE   
+		         ,JPMBONUS
+		         ,COMCD 
+				 ,ORDERGUBUN
+		         ,JEPMSEQ
+		         ,PRDATETIME
+		         ,PRUSERID
+		         ,CHK
+		)
+		SELECT 
+		  		#{USER.GROUPCD}   
+		        ,#{USER.GROUPNAME}   
+		        ,#{BRAND}
+		        ,#{KIND}
+		        ,#{JEPMCD}
+		        ,#{JEPMNM}
+		        ,#{BARCD}
+		        ,#{PRICE}
+		        ,#{INPRICE}
+		        ,0
+		        ,#{SALEPRICE}
+		        ,#{JPMBONUS}
+		        ,''
+		        ,''
+		        ,#{JEPMSEQ}
+		        ,DATEFORMAT(GETDATE(),'YYYYMMDDHHNNSS')
+		        ,#{USER.USERID}
+		        ,'Y'
+		FROM DUMMY 
+	</insert>
+
+	<update id="dataUpdate" parameterType="java.util.HashMap"> 
+		UPDATE JEPM_MST SET
+				 BRAND    = #{BRAND}
+		         ,KIND    = #{KIND}
+		         ,JEPMCD = #{JEPMCD}
+		         ,JEPMNM = #{JEPMNM}
+		         ,BARCD    = #{BARCD}
+		         ,PRICE      = #{PRICE}
+		         ,INPRICE    = #{INPRICE}
+		         ,SALEPRICE    = #{SALEPRICE}
+		         ,JPMBONUS = #{JPMBONUS}
+				,EDITUSERID = #{USER.USERID}
+				,EDITDATETIME = DATEFORMAT(GETDATE(),'YYYYMMDDHHNNSS')
+		WHERE JEPMSEQ = #{JEPMSEQ}
+	</update>	
+
+	<update id="dataDelete" parameterType="java.util.HashMap"> 
+		UPDATE JEPM_MST SET
+				CHK = 'N'
+				,EDITUSERID = #{USER.USERID}
+				,EDITDATETIME = DATEFORMAT(GETDATE(),'YYYYMMDDHHNNSS')
+		WHERE JEPMSEQ = #{JEPMSEQ}
+	</update>	
+	
+</mapper>

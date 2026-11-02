@@ -1,0 +1,238 @@
+/* attendance_review.css
+ * 근태 조회/결재 화면 스타일 — 테블릿 터치 사용을 기준으로 큰 터치 영역(44px+)을 유지합니다.
+ * s_dashboard.jsp 또는 별도 화면에서:
+ *   <link rel="stylesheet" href="${pageContext.request.contextPath}/resources/css/attendance_review.css">
+ */
+.att-screen { width: 100%; max-width: 1440px; } /* 가운데 정렬 대신 콘텐츠 영역 왼쪽에 맞춤 (제목과 나란히) */
+
+/* ── 필터 바 ───────────────────────── */
+.att-filter-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 16px 18px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  margin-bottom: 14px;
+}
+.att-filter-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.att-filter-group { display: flex; align-items: center; gap: 8px; margin-right: 6px; }
+.att-filter-label { font-size: 14px; color: #495057; font-weight: 600; white-space: nowrap; }
+.att-select, .att-date {
+  height: 46px;
+  border: 1px solid #dee2e6;
+  border-radius: 10px;
+  padding: 0 14px;
+  font-size: 15px;
+  color: #212529;
+  background: #fff;
+  min-width: 110px;
+}
+.att-chip-group { display: flex; gap: 6px; flex-wrap: wrap; }
+.att-chip {
+  height: 44px;
+  padding: 0 16px;
+  border-radius: 22px;
+  border: 1px solid #dee2e6;
+  background: #fff;
+  color: #495057;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.att-chip.active { background: #111827; color: #fff; border-color: #111827; }
+.att-spacer { flex: 1; }
+.att-btn-search {
+  height: 46px;
+  padding: 0 26px;
+  border-radius: 10px;
+  background: #111827;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+}
+.att-status-filter-row { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e9ecef; }
+
+/* ── 테이블 ───────────────────────── */
+.att-table-card {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  overflow: visible;
+}
+.att-table { width: 100%; border-collapse: collapse; }
+.att-table thead th {
+  background: #f8f9fa;
+  color: #495057;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  padding: 14px 8px;
+  border-bottom: 2px solid #e9ecef;
+}
+.att-table tbody td {
+  text-align: center;
+  padding: 0 8px;
+  font-size: 15px;
+  color: #212529;
+  border-bottom: 1px solid #f1f3f5;
+  position: relative;
+}
+.att-table tbody tr { height: 68px; }
+.att-table tbody tr:nth-child(even) { background: #fafbfc; }
+.att-name { font-weight: 700; }
+.att-empno { color: #868e96; font-size: 13px; }
+.att-equip-badge {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 8px;
+  background: #f1f3f5;
+  color: #495057;
+  font-size: 13px;
+  font-weight: 600;
+}
+.att-time { font-variant-numeric: tabular-nums; color: #495057; }
+.att-time-empty { color: #ced4da; }
+
+/* 출근/퇴근시간 입력 (수정 가능) */
+.att-time-input {
+  height: 40px;
+  width: 90px;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 0 8px;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  color: #212529;
+  background: #fff;
+}
+
+/* 설비 선택 (수정 가능) */
+.att-equip-select {
+  height: 40px;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #495057;
+  background: #f1f3f5;
+}
+
+/* 조회 시점 값과 달라진 칸 강조 (배경색은 그대로 두고 테두리 링만 추가) */
+.att-field-changed {
+  box-shadow: 0 0 0 2px #f59f00 inset;
+}
+
+/* 출근/퇴근/설비/상태 중 하나라도 바뀐 행(라인) 전체를 색으로 강조 */
+.att-table tbody tr.att-row-changed { background: #fff8e6; }
+.att-table tbody tr.att-row-changed td:first-child { box-shadow: inset 3px 0 0 #f59f00; }
+/* 선택(체크박스)된 행이 우선 — 둘 다 해당되면 선택 스타일이 보입니다 */
+.att-table tbody tr.att-selected { background: #eef1f6 !important; }
+.att-table tbody tr.att-selected td:first-child { box-shadow: inset 3px 0 0 #111827; }
+
+/* 상태 배지 (터치하면 아래로 선택 팝업 오픈) */
+.att-status-pill {
+  min-width: 84px;
+  height: 40px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+}
+.att-status-정상 { background: #f1f3f5; color: #495057; }
+.att-status-년차 { background: #e7f1ff; color: #1c64f2; }
+.att-status-반차 { background: #edf2ff; color: #4263eb; }
+.att-status-조퇴 { background: #fff4e6; color: #e8590c; }
+.att-status-지각 { background: #fff9db; color: #e67700; }
+.att-status-이탈 { background: #ffe3e3; color: #c92a2a; }
+
+.att-status-menu {
+  position: absolute;
+  z-index: 20;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 6px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  padding: 8px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  width: 240px;
+}
+.att-status-menu button {
+  height: 44px;
+  border-radius: 10px;
+  border: none;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* 결제 스텝퍼 */
+.att-stepper { display: inline-flex; align-items: center; gap: 4px; }
+.att-step { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 44px; }
+.att-step-dot {
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  border: 2px solid #dee2e6; color: #adb5bd; background: #fff;
+  cursor: default;
+}
+.att-step-dot.done { background: #111827; border-color: #111827; color: #fff; }
+.att-step-dot.next { border-color: #111827; color: #111827; cursor: pointer; }
+.att-step-label { font-size: 10px; color: #adb5bd; }
+.att-step-label.done { color: #495057; font-weight: 700; }
+.att-step-line { width: 12px; height: 2px; background: #dee2e6; margin-top: -14px; }
+.att-step-line.done { background: #111827; }
+
+/* 전송 버튼 */
+.att-btn-send {
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  border: none;
+}
+.att-btn-send.ready { background: #111827; color: #fff; cursor: pointer; }
+.att-btn-send.disabled { background: #f1f3f5; color: #ced4da; cursor: not-allowed; }
+.att-btn-send.done { background: #e9ecef; color: #868e96; cursor: default; }
+
+/* 체크박스 / 다중선택 */
+.att-checkbox-col { width: 56px; }
+.att-row-checkbox { width: 26px; height: 26px; accent-color: #111827; cursor: pointer; }
+
+/* 하단 일괄 처리 바 (선택 항목이 있을 때만 표시, 화면 하단에 고정) */
+.att-bulk-bar {
+  position: sticky;
+  bottom: 16px;
+  margin-top: 14px;
+  background: #111827;
+  color: #fff;
+  border-radius: 14px;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  z-index: 30;
+}
+.att-bulk-count { font-size: 15px; font-weight: 700; }
+.att-bulk-spacer { flex: 1; }
+.att-bulk-btn {
+  height: 48px;
+  padding: 0 22px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+}
+.att-bulk-btn.primary { background: #fff; color: #111827; }
+.att-bulk-btn.primary:disabled { background: #4b5563; color: #9ca3af; cursor: not-allowed; }
+.att-bulk-btn.ghost { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.35); }

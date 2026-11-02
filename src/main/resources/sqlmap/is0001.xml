@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 맵핑될 DAO 인터페이스의 Full name 을 줍니다. -->
+<mapper namespace="is0001">
+
+<select id="selectMain" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+  SELECT GROUPCD,   
+         GROUPNAME,   
+         COMCD,   
+         COMNAME,   
+         BANPUMPER,   
+         NICKNAME,   
+         BANPUMPROC,   
+         CHK,   
+         (IF JEGOEDIT = 'Y' THEN 'Y' ELSE 'N' ENDIF)   JEGOEDIT
+    FROM COMPANY_TB   
+    WHERE 1 = 1
+    	AND GROUPCD = #{USER.GROUPCD}
+		<if test="frmCUSTNAME != null and frmCUSTNAME != ''	"> 
+	    	AND COMNAME LIKE '%' + #{frmCUSTNAME} + '%'
+		</if>
+		<if test="frmCHECK == 'on'	"> 
+	    	AND CHK = 'Y'
+		</if>
+		<if test="frmCHECK == null or frmCHECK == ''	"> 
+	    	AND CHK = 'N'
+		</if>
+    ORDER BY GROUPCD ASC,COMCD ASC 
+</select>
+
+	<insert id="dataInsert" parameterType="java.util.HashMap"> 
+		INSERT INTO COMPANY_TB (
+		  		 GROUPCD   
+		         ,GROUPNAME   
+		         ,COMCD   
+		         ,COMNAME   
+		         ,NICKNAME   
+		         ,JEGOEDIT
+		         ,PRDATETIME
+		         ,PRUSER
+		         ,CHK
+		)
+		SELECT 
+		  		#{USER.GROUPCD}   
+		        ,#{USER.GROUPNAME}   
+		        ,#{COMCD}   
+		        ,#{COMNAME}   
+		        ,(IF #{NICKNAME}= '' THEN #{COMNAME} ELSE #{NICKNAME} ENDIF)   
+		        ,ISNULL(#{JEGOEDIT},'Y')
+		        ,#{USER.USERID}
+		        ,DATEFORMAT(GETDATE(),'YYYYMMDDHHNNSS')
+		        ,'Y'
+		FROM DUMMY 
+		WHERE NOT EXISTS (SELECT 1 FROM COMPANY_TB C WHERE C.COMCD = #{COMCD})
+	</insert>
+
+	<update id="dataUpdate" parameterType="java.util.HashMap"> 
+		UPDATE COMPANY_TB SET
+				COMNAME = #{COMNAME}
+				,NICKNAME = #{NICKNAME}
+				,JEGOEDIT = #{JEGOEDIT}
+				,EDITUSERID = #{USER.USERID}
+				,EDITDATETIME = DATEFORMAT(GETDATE(),'YYYYMMDDHHNNSS')
+		WHERE COMCD = #{COMCD}
+	</update>	
+
+	<update id="dataDelete" parameterType="java.util.HashMap"> 
+		UPDATE COMPANY_TB SET
+				CHK = 'N'
+				,EDITUSERID = #{USER.USERID}
+				,EDITDATETIME = DATEFORMAT(GETDATE(),'YYYYMMDDHHNNSS')
+		WHERE COMCD = #{COMCD}
+	</update>	
+
+
+	
+</mapper>

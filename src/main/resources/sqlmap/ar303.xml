@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 	<select id="findSheetList" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap">
+		<mapper namespace="sy2015Mapper">
+ -->
+<!-- 맵핑될 DAO 인터페이스의 Full name 을 줍니다. -->
+<mapper namespace="ar303">
+
+<select id="selectSalesReport" parameterType="map" resultType="map">
+    SELECT
+        t.custcd      AS CUSTCD,
+        c.custname    AS CUSTNAME,
+        c.sabunnm     AS SABUNNM,
+        SUM(t.amt)    AS AMT,
+        SUM(t.banpum) AS BANPUM,
+        (SUM(t.amt) - SUM(t.banpum)) AS MCAMT,
+        SUM(t.cash)   AS SKAMT,
+        SUM(t.sale)   AS SALEAMT,
+        (SUM(t.amt) - SUM(t.banpum) - SUM(t.inamt)) AS PROFIT,
+        SUM(ISNULL(k.janamt, 0) + t.amt - t.banpum - t.cash - t.sale) AS JANAMT
+    FROM (
+        SELECT custcd, gubun, SUM(amt) amt, SUM(banpum) banpum, SUM(inamt) inamt, 0 cash, 0 sale
+        FROM mc20_mst
+        WHERE buseo = '0001'
+          AND gubun = '매출'
+          AND cdate BETWEEN #{fromDate} AND #{toDate}
+        GROUP BY custcd, gubun
+
+        UNION ALL
+
+        SELECT custcd, kjskgu, 0, 0, 0, SUM(cashamt), SUM(saleamt)
+        FROM kjsk_mst
+        WHERE buseo = '0001'
+          AND kjskdate BETWEEN #{fromDate} AND #{toDate}
+          AND kjskgu = '수금'
+        GROUP BY buseo, kjskgu, custcd
+    ) t
+    LEFT OUTER JOIN kjsk_tb k
+        ON k.custcd = t.custcd
+       AND k.buseo  = '0001'
+       AND k.YYMM   = DATEFORMAT(DATEADD(MONTH, -1, CAST(#{fromDate} AS DATE)), 'YYYYMM')
+    LEFT OUTER JOIN cust_mst c
+        ON c.custcd = t.custcd
+    <where>
+        <if test="type == 'sabun' and keyword != null and keyword != ''">
+            AND c.sabunnm LIKE '%' + #{keyword} + '%'
+        </if>
+        <if test="type == 'cust' and keyword != null and keyword != ''">
+            AND c.custname LIKE '%' + #{keyword} + '%'
+        </if>
+    </where>
+    GROUP BY t.custcd, c.custname, c.sabunnm
+    ORDER BY c.sabunnm, c.custname
+</select>
+
+	
+</mapper>

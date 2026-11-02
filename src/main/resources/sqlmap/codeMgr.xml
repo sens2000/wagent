@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 	<select id="findSheetList" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap">
+		<mapper namespace="sy2015Mapper">
+ -->
+<!-- 맵핑될 DAO 인터페이스의 Full name 을 줍니다. -->
+<mapper namespace="codeMgr">
+
+<select id="selectJepmBrandList" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+	SELECT distinct 
+		BRAND text 
+		,BRAND value  
+	FROM JEPM_MST 
+	WHERE BRAND != ''
+		AND CHK = 'Y'
+    	AND GROUPCD = #{USER.GROUPCD}
+	ORDER BY 1    	
+</select>
+
+<select id="select_codemst_test" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+	SELECT CODE,CODENM,FIND FROM CODE_MST WHERE CODEGU = '근태'
+</select>
+
+<select id="m_SENSselectCodeList" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+	SELECT CONVERT(INT,CODE)
+		,CODE
+		,CODENM 
+		,PRDATE
+		,FIND
+	FROM CODE_MST 
+	WHERE CODEGU = #{CODEGU}
+	ORDER BY 1
+</select>
+
+<select id="m_SENSselectCustList" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+	SELECT SABUNNM
+		,CUSTCD
+		,CUSTNAME
+		,OWNER
+		,TELNO
+		,HANDNO
+	FROM CUST_MST 
+	WHERE BUSEO = #{BUSEO} AND MIMC = #{MIMC} 
+		AND (CUSTNAME LIKE #{FIND} + '%' OR TELNO LIKE '%' + #{FIND} OR HANDNO LIKE '%' + #{FIND}) 
+		AND CHK = 'Y'
+</select>
+
+
+<select id="selectJepmKindList" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+	SELECT distinct 
+		KIND text 
+		,KIND value  
+	FROM JEPM_MST 
+	WHERE BRAND != ''
+		AND CHK = 'Y'
+    	AND GROUPCD = #{USER.GROUPCD}
+	ORDER BY 1    	
+</select>
+
+
+<select id="selectAcctGrpNm" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+	SELECT distinct 
+		ACCTGRPNM text 
+		,ACCTGRPNM value  
+	FROM ACCT_TB 
+	WHERE ACCTGRPNM != ''
+		AND CHK = 'Y'
+    	AND GROUPCD = #{USER.GROUPCD}
+    	AND COMCD = #{USER.COMCD}
+	ORDER BY 1    	
+</select>
+
+<select id="selectSawonList" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+	SELECT distinct 
+		SANAME value 
+		,SACD text  
+	FROM SAWON_MST 
+	WHERE SANAME != ''
+		AND TOISA = 'N'
+    	AND GROUPCD = #{USER.GROUPCD}
+    	AND COMCD = #{USER.COMCD}
+	ORDER BY 1    	
+</select>
+
+<select id="selectCodeList" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+	SELECT  
+		CODENM text  
+		,CODE value 
+	FROM CODE_MST 
+	WHERE CODEGU = #{CODEGU}
+		AND CHK = 'Y'
+    	AND GROUPCD = #{USER.GROUPCD}
+    	AND COMCD = #{USER.COMCD}
+	ORDER BY 1    	
+</select>
+
+</mapper>

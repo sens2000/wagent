@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 	<select id="findSheetList" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap">
+		<mapper namespace="sy2015Mapper">
+ -->
+<!-- 맵핑될 DAO 인터페이스의 Full name 을 줍니다. -->
+<mapper namespace="im0001">
+<select id="selectMain" parameterType="java.util.HashMap" resultType="java.util.LinkedHashMap"> 
+  SELECT 
+		CUST_MST.SANAME SANAME
+		,CUST_MST.CUSTNAME CUSTNAME
+		,MC20_MST.CUSTCD CUSTCD
+		,MC20_MST.JPNO   JPNO
+		,MC20_MST.CDATE   CDATE
+		,MC20_MST.AMT    AMT
+		,MC20_MST.BANPUM    BANPUM
+		,MC20_MST.TOTAMT    TOTAMT
+		,MC20_MST.CASH CASHAMT    
+		,MC20_MST.SALE SALEAMT    
+		,0    MISUAMT
+		,MC20_MST.REMK REMK   
+        ,get_date_fmt(MC20_MST.PRDATETIME)  PRDATE   
+    FROM MC20_MST   , CUST_MST
+   WHERE MC20_MST.CUSTCD = CUST_MST.CUSTCD
+	AND	MC20_MST.CHK = 'Y'  
+   	AND MC20_MST.GROUPCD = #{USER.GROUPCD}
+   	AND MC20_MST.COMCD = #{USER.COMCD}
+	AND    MC20_MST.CDATE BETWEEN REPLACE(#{FRDATE},'-','') AND REPLACE(#{TODATE},'-','') 
+	<if test="frmCUSTNAME != null and frmCUSTNAME != ''	"> 
+    	AND CUST_MST.CUSTNAME LIKE '%' + #{frmCUSTNAME} + '%'
+	</if>
+	ORDER BY CUST_MST.SANAME,CUST_MST.CUSTNAME,MC20_MST.CDATE,MC20_MST.JPNO
+</select>
+
+	<insert id="dataInsert" parameterType="java.util.HashMap"> 
+	  <selectKey keyProperty="CUSTCD" resultType="String" order="BEFORE">
+	  	SELECT ISNULL(MAX(CONVERT(DOUBLE,CUSTCD)),0) + 1 CUSTCD FROM CUST_MST
+	  </selectKey>
+		INSERT INTO CUST_MST (
+		  		 GROUPCD   
+		         ,GROUPNAME   
+		         ,COMCD   
+		         ,COMNAME
+		         ,CUSTCD   
+		         ,CUSTNAME   
+		         ,OWNER   
+		         ,TAXNAME   
+		         ,SANO   
+		         ,TELNO   
+		         ,HANDNO   
+		         ,JANAMT   
+		         ,POSITION   
+		         ,SANAME   
+		         ,POSITIONCD   
+		         ,SALEPER   
+		         ,MCGRADE   
+		         ,GUBUN   
+		         ,LASTKJSK   
+		         ,MIMC   
+		         ,SABUN
+		         ,PRDATETIME
+		         ,PRUSERID
+		         ,CHK
+		)
+		SELECT 
+		  		#{USER.GROUPCD}   
+		        ,#{USER.GROUPNAME}   
+		        ,#{USER.COMCD}   
+		        ,#{USER.COMNAME}   
+		        ,#{CUSTCD}
+		        ,#{CUSTNAME}
+		        ,#{OWNER}
+		        ,#{TAXNAME}
+		        ,#{SANO}
+		        ,''
+		        ,#{HANDNO}
+		        ,0
+		        ,''
+		        ,#{SANAME}
+		        ,''
+		        ,${SALEPER}
+		        ,#{MCGRADE}
+		        ,''
+		        ,''
+		        ,#{MIMC}
+		        ,''
+		        ,DATEFORMAT(GETDATE(),'YYYYMMDDHHNNSS')
+		        ,#{USER.USERID}
+		        ,'Y'
+		FROM DUMMY 
+	</insert>
+
+	<update id="dataUpdate" parameterType="java.util.HashMap"> 
+		UPDATE CUST_MST SET
+		         CUSTNAME    = #{CUSTNAME}
+		         ,OWNER    = #{OWNER}
+		         ,TAXNAME    = #{TAXNAME}
+		         ,SANO    = #{SANO}
+		         ,HANDNO    = #{HANDNO}
+		         ,SANAME    = #{SANAME}
+		         ,SALEPER    = #{SALEPER}
+		         ,MCGRADE    = #{MCGRADE}
+		         ,MIMC    = #{MIMC}
+				,EDITUSERID = #{USER.USERID}
+				,EDITDATETIME = DATEFORMAT(GETDATE(),'YYYYMMDDHHNNSS')
+		WHERE CUSTCD = #{CUSTCD}
+	</update>	
+
+	<update id="dataDelete" parameterType="java.util.HashMap"> 
+		UPDATE CUST_MST SET
+				CHK = 'N'
+				,EDITUSERID = #{USER.USERID}
+				,EDITDATETIME = DATEFORMAT(GETDATE(),'YYYYMMDDHHNNSS')
+		WHERE CUSTCD = #{CUSTCD}
+	</update>	
+	
+</mapper>
